@@ -1,36 +1,33 @@
 // SPDX-License-Identifier: GPL-3.0
-
-pragma solidity ^0.8.28;
-
+pragma solidity >=0.7.0 <0.9.0;
 contract Voting {
-    string[] public candidates;
-    mapping(string => uint256) public votes;
+    struct Candidate {
+        string name;
+        string imageCID;
+        uint voteCount;
+    }
+    mapping(uint => Candidate) public candidates;
     mapping(address => bool) public hasVoted;
-
-    constructor(string[] memory _candidates) {
-        candidates = _candidates;
+    uint public candidatesCount;
+    address public owner;
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner can call this function");
+        _;
     }
-
-    function vote(string memory candidate) public {
-        require(!hasVoted[msg.sender], "You have already voted.");
-        bool valid = false;
-        for (uint256 i = 0; i < candidates.length; i++) {
-            if (keccak256(bytes(candidates[i])) == keccak256(bytes(candidate))) {
-                valid = true;
-                break;
-            }
-        }
-        require (valid, "Invalid candidate.");
-        votes[candidate]++;
+    constructor() {
+        owner = msg.sender;
+    }
+    function addCandidate(
+        string memory _name,
+        string memory _imageCID
+    ) public onlyOwner {
+        candidates[candidatesCount] = Candidate(_name, _imageCID, 0);
+        candidatesCount++;
+    }
+    function vote(uint _candidateId) public {
+        require(!hasVoted[msg.sender], "You have already voted");
+        require(_candidateId < candidatesCount, "Invalid candidate ID");
         hasVoted[msg.sender] = true;
+        candidates[_candidateId].voteCount++;
     }
-
-    function getVotes(string memory candidate) public view returns (uint) {
-        return votes[candidate];
-    }
-
-    function getCandidates() public view returns (string[] memory) {
-        return candidates;
-    }
-
 }
